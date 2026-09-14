@@ -3,9 +3,11 @@ import {
   CreateDateColumn,
   Entity,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Tenant } from '../../tenants/entities/tenant.entity';
+import { Delivery } from '../../deliveries/entities/delivery.entity';
 
 export enum EStatus {
   ACTIVE = 'active',
@@ -24,6 +26,8 @@ export class Endpoint {
   id: string;
   @ManyToOne(() => Tenant, (tenant) => tenant.endpoints)
   tenant: Tenant;
+  @OneToMany(() => Delivery, (delivery) => delivery.endpoint)
+  deliveries: Delivery[];
   @Column()
   url: string;
   @Column({ select: false })

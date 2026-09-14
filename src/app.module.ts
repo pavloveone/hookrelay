@@ -7,6 +7,12 @@ import { Tenant } from './tenants/entities/tenant.entity';
 import { TenantsModule } from './tenants/tenants.module';
 import { EndpointsModule } from './endpoints/endpoints.module';
 import { Endpoint } from './endpoints/entities/endpoint.entity';
+import { Event } from './events/entities/event.entity';
+import { EventsModule } from './events/events.module';
+import { DeliveriesModule } from './deliveries/deliveries.module';
+import { Delivery } from './deliveries/entities/delivery.entity';
+import { DeliveryAttemptsModule } from './deliveryAttempts/deliveryAttempts.module';
+import { DeliveryAttempt } from './deliveryAttempts/entities/deliveryAttempt.entity';
 
 @Module({
   imports: [
@@ -18,6 +24,9 @@ import { Endpoint } from './endpoints/entities/endpoint.entity';
     }),
     TenantsModule,
     EndpointsModule,
+    EventsModule,
+    DeliveriesModule,
+    DeliveryAttemptsModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -28,7 +37,7 @@ import { Endpoint } from './endpoints/entities/endpoint.entity';
         database: configService.get('POSTGRESS_DB'),
         host: configService.get('DB_HOST'),
         port: configService.get<number>('DB_PORT'),
-        entities: [Tenant, Endpoint],
+        entities: [Tenant, Endpoint, Event, Delivery, DeliveryAttempt],
       }),
     }),
   ],

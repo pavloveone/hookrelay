@@ -6,6 +6,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Endpoint } from '../../endpoints/entities/endpoint.entity';
+import { Event } from '../../events/entities/event.entity';
 
 @Entity()
 export class Tenant {
@@ -17,6 +18,8 @@ export class Tenant {
   apiKey: string;
   @OneToMany(() => Endpoint, (endpoint) => endpoint.tenant)
   endpoints: Endpoint[];
+  @OneToMany(() => Event, (event) => event.tenant)
+  events: Event[];
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 }
