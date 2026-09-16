@@ -32,9 +32,9 @@ import { DeliveryAttempt } from './deliveryAttempts/entities/deliveryAttempt.ent
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        username: configService.get('DB_USERNAME'),
-        password: configService.get('DB_PASSWORD'),
-        database: configService.get('POSTGRESS_DB'),
+        username: configService.get('POSTGRES_USER'),
+        password: configService.get('POSTGRES_PASSWORD'),
+        database: configService.get('POSTGRES_DB'),
         host: configService.get('DB_HOST'),
         port: configService.get<number>('DB_PORT'),
         entities: [Tenant, Endpoint, Event, Delivery, DeliveryAttempt],
