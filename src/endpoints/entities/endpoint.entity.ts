@@ -1,13 +1,7 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  ManyToOne,
-  OneToMany,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
 import { Tenant } from '../../tenants/entities/tenant.entity';
 import { Delivery } from '../../deliveries/entities/delivery.entity';
+import { Basic } from '../../common/database/entities/basic.entity';
 
 export enum EStatus {
   ACTIVE = 'active',
@@ -21,9 +15,7 @@ export enum ECircuitState {
 }
 
 @Entity()
-export class Endpoint {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+export class Endpoint extends Basic {
   @ManyToOne(() => Tenant, (tenant) => tenant.endpoints)
   tenant: Tenant;
   @OneToMany(() => Delivery, (delivery) => delivery.endpoint)
@@ -42,6 +34,4 @@ export class Endpoint {
   consecutiveFailures: number;
   @Column({ type: 'timestamp', nullable: true })
   circuitOpenedAt: Date;
-  @CreateDateColumn({ type: 'timestamp' })
-  createdAt: Date;
 }

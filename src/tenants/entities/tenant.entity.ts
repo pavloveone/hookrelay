@@ -1,17 +1,10 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  OneToMany,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, Entity, OneToMany } from 'typeorm';
 import { Endpoint } from '../../endpoints/entities/endpoint.entity';
 import { Event } from '../../events/entities/event.entity';
+import { Basic } from '../../common/database/entities/basic.entity';
 
 @Entity()
-export class Tenant {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+export class Tenant extends Basic {
   @Column()
   name: string;
   @Column()
@@ -20,6 +13,4 @@ export class Tenant {
   endpoints: Endpoint[];
   @OneToMany(() => Event, (event) => event.tenant)
   events: Event[];
-  @CreateDateColumn({ type: 'timestamp' })
-  createdAt: Date;
 }

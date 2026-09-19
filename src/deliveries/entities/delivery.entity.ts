@@ -1,14 +1,8 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  ManyToOne,
-  OneToMany,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
 import { Event } from '../../events/entities/event.entity';
 import { Endpoint } from '../../endpoints/entities/endpoint.entity';
 import { DeliveryAttempt } from '../../deliveryAttempts/entities/deliveryAttempt.entity';
+import { Basic } from '../../common/database/entities/basic.entity';
 
 export enum EStatus {
   PENDING = 'pending',
@@ -18,9 +12,7 @@ export enum EStatus {
 }
 
 @Entity()
-export class Delivery {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+export class Delivery extends Basic {
   @ManyToOne(() => Event, (event) => event.deliveries)
   event: Event;
   @ManyToOne(() => Endpoint, (endpoint) => endpoint.deliveries)
@@ -36,6 +28,4 @@ export class Delivery {
   attemptCount: number;
   @Column({ type: 'timestamp', nullable: true })
   nextRetryAt: Date;
-  @CreateDateColumn({ type: 'timestamp' })
-  createdAt: Date;
 }
