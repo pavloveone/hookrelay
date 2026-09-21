@@ -46,9 +46,13 @@ export class EventsService {
             endpointId: endpoint.id,
             eventId: newEvent.id,
           });
-          await this.deliveriesQueue.add('deliver', {
-            deliveryId: delivery.id,
-          });
+          await this.deliveriesQueue.add(
+            'deliver',
+            {
+              deliveryId: delivery.id,
+            },
+            { attempts: 5, backoff: { type: 'exponential', delay: 1000 } },
+          );
         }),
       );
       return newEvent;
