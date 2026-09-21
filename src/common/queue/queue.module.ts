@@ -2,6 +2,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { QueueOptions } from 'bullmq';
+import { queues } from './queues';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { QueueOptions } from 'bullmq';
         return factory;
       },
     }),
-    BullModule.registerQueue({ name: 'deliveries' }),
+    BullModule.registerQueue({ name: queues.DELIVERIES }),
   ],
   exports: [BullModule],
 })

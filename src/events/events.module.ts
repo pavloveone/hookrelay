@@ -4,10 +4,16 @@ import { EventsController } from './events.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Event } from './entities/event.entity';
 import { QueueModule } from '../common/queue/queue.module';
+import { DeliveriesModule } from '../deliveries/deliveries.module';
+import { Endpoint } from '../endpoints/entities/endpoint.entity';
 
 @Module({
   providers: [EventsService],
   controllers: [EventsController],
-  imports: [TypeOrmModule.forFeature([Event]), QueueModule],
+  imports: [
+    TypeOrmModule.forFeature([Event, Endpoint]),
+    QueueModule,
+    DeliveriesModule,
+  ],
 })
 export class EventsModule {}
