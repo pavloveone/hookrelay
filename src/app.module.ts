@@ -8,6 +8,7 @@ import { EventsModule } from './events/events.module';
 import { DeliveriesModule } from './deliveries/deliveries.module';
 import { DeliveryAttemptsModule } from './deliveryAttempts/deliveryAttempts.module';
 import { DatabaseModule } from './common/database/database.module';
+import { QueueModule } from './common/queue/queue.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { DatabaseModule } from './common/database/database.module';
     DeliveriesModule,
     DeliveryAttemptsModule,
     DatabaseModule,
+    QueueModule,
   ],
   controllers: [AppController],
   providers: [AppService],

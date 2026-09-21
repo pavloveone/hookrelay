@@ -1,5 +1,4 @@
-import { IsString } from '@nestjs/class-validator';
-import { IsObject } from 'class-validator';
+import { IsObject, IsString } from 'class-validator';
 
 export class CreateEventDto {
   @IsString()
