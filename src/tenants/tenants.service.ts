@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Tenant } from './entities/tenant.entity';
 import { Repository } from 'typeorm';
@@ -14,5 +14,16 @@ export class TenantsService {
   async create(dto: CreateTenantDto) {
     const apiKey = crypto.randomUUID();
     return await this.tenantsRepository.save({ ...dto, apiKey });
+  }
+
+  async findByApiKey(apiKey: string) {
+    if (!apiKey) {
+      throw new UnauthorizedException();
+    }
+    const current = await this.tenantsRepository.findOneBy({ apiKey });
+    if (!current) {
+      throw new UnauthorizedException();
+    }
+    return current;
   }
 }

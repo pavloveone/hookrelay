@@ -12,10 +12,10 @@ export class EndpointsService {
     private readonly endpointsRepository: Repository<Endpoint>,
   ) {}
 
-  create(dto: CreateEndpointDto) {
+  create(dto: CreateEndpointDto, req: any) {
     const secret = crypto.randomUUID();
     return this.endpointsRepository.save({
-      tenant: { id: dto.tenantId },
+      tenant: { id: req.tenant.id },
       url: dto.url,
       secret,
       subscribedEventTypes: dto.subscribedEventTypes,

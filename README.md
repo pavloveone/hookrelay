@@ -20,10 +20,12 @@ Idempotency isn't a "check first, then insert" - that has a race window under co
 - `POST /tenants` - register a tenant, returns an `apiKey` (shown once)
 
 **Endpoints** (`/endpoints`)
-- `POST /endpoints` - register a subscriber URL for a tenant, returns a `secret` (shown once, used for payload signing later)
+- `POST /endpoints` - register a subscriber URL for the authenticated tenant, returns a `secret` (shown once, used for payload signing later). Requires `x-api-key`.
 
 **Events** (`/events`)
-- `POST /events` - ingest an event (`tenantId`, `eventType`, `payload`, `idempotencyKey`); a repeated `idempotencyKey` returns the original event instead of creating a duplicate
+- `POST /events` - ingest an event (`eventType`, `payload`, `idempotencyKey`) for the authenticated tenant; a repeated `idempotencyKey` returns the original event instead of creating a duplicate. Requires `x-api-key`.
+
+`x-api-key` is the `apiKey` returned from `POST /tenants` - it resolves which tenant the request belongs to, so the tenant is never taken from the request body itself.
 
 ## Running locally
 
@@ -56,10 +58,10 @@ npm run start:dev
 - [x] Fan-out to subscribed endpoints through BullMQ
 - [x] Retry with exponential backoff
 - [x] Circuit breaker per endpoint (`closed` / `open` / `half_open`)
+- [x] API-key auth (tenant resolved from `x-api-key`, never trusted from the request body)
 - [ ] Rate limiting per tenant
 - [ ] HMAC signature on delivered payloads
 - [ ] Structured logging
-- [ ] API-key auth (endpoints currently take `tenantId` directly, no guard yet)
 - [ ] Dead-letter replay endpoint for exhausted deliveries
 - [ ] Read endpoints (list/get tenants, endpoints, deliveries)
 - [ ] Unit/e2e tests

@@ -20,12 +20,11 @@ export class EventsService {
     @InjectQueue(queues.DELIVERIES) private readonly deliveriesQueue: Queue,
   ) {}
 
-  async createEvent({
-    tenantId,
-    idempotencyKey,
-    eventType,
-    payload,
-  }: CreateEventDto) {
+  async createEvent(
+    { idempotencyKey, eventType, payload }: CreateEventDto,
+    req: any,
+  ) {
+    const tenantId = req.tenant.id;
     try {
       const newEvent = await this.eventsRepository.save({
         idempotencyKey,
