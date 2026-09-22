@@ -8,5 +8,6 @@ import { Endpoint } from './entities/endpoint.entity';
   providers: [EndpointsService],
   controllers: [EndpointsController],
   imports: [TypeOrmModule.forFeature([Endpoint])],
+  exports: [EndpointsService],
 })
 export class EndpointsModule {}

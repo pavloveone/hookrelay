@@ -6,6 +6,7 @@ import { Delivery } from './entities/delivery.entity';
 import { DeliveriesProcessor } from './deliveries.processor';
 import { HttpModule } from '@nestjs/axios';
 import { DeliveryAttemptsModule } from '../deliveryAttempts/deliveryAttempts.module';
+import { EndpointsModule } from '../endpoints/endpoints.module';
 
 @Module({
   providers: [DeliveriesService, DeliveriesProcessor],
@@ -14,6 +15,7 @@ import { DeliveryAttemptsModule } from '../deliveryAttempts/deliveryAttempts.mod
     TypeOrmModule.forFeature([Delivery]),
     HttpModule,
     DeliveryAttemptsModule,
+    EndpointsModule,
   ],
   exports: [DeliveriesService],
 })

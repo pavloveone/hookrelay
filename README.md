@@ -1,114 +1,70 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Hookrelay
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A mini Svix/Hookdeck - a webhook delivery service built to practice reliable async delivery end to end, instead of another CRUD app.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Tenants send events through the API. Each event fans out to every endpoint subscribed to it, gets queued, and delivered with retries, exponential backoff, and a per-endpoint circuit breaker so a dead subscriber doesn't get hammered forever. Duplicate events (same idempotency key) are deduplicated instead of re-delivered.
 
-## Description
+## Stack
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+NestJS, PostgreSQL (TypeORM), Redis + BullMQ
 
-## Project setup
+## How it's structured
 
-```bash
-$ npm install
-```
+The data model is `Tenant` → `Endpoint`/`Event` → `Delivery` → `DeliveryAttempt`. An `Event` is just "something happened" - it doesn't know who receives it. Fan-out creates one `Delivery` per subscribed `Endpoint`, and every HTTP try against it is logged as a separate `DeliveryAttempt`, success or failure.
 
-## Compile and run the project
+Idempotency isn't a "check first, then insert" - that has a race window under concurrent requests. Instead, inserts rely on a real unique constraint on `(tenant, idempotencyKey)`; a conflict means the event already exists, and the existing row is returned instead. Retries are handled by BullMQ's own `attempts`/`backoff` options rather than a hand-rolled retry loop. The circuit breaker (`closed` / `open` / `half_open`) lives on the `Endpoint` itself, so a run of failures stops the queue from wasting HTTP timeouts on an endpoint that's clearly down, and a single probe request after a cooldown decides whether to close it again.
+
+## API
+
+**Tenants** (`/tenants`)
+- `POST /tenants` - register a tenant, returns an `apiKey` (shown once)
+
+**Endpoints** (`/endpoints`)
+- `POST /endpoints` - register a subscriber URL for a tenant, returns a `secret` (shown once, used for payload signing later)
+
+**Events** (`/events`)
+- `POST /events` - ingest an event (`tenantId`, `eventType`, `payload`, `idempotencyKey`); a repeated `idempotencyKey` returns the original event instead of creating a duplicate
+
+## Running locally
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+docker compose up -d
 ```
 
-## Run tests
+`.env`:
+```env
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=hookrelay
+DB_HOST=localhost
+DB_PORT=5432
+
+REDIS_HOST=localhost
+REDIS_PORT=6379
+```
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm install
+npm run migration:run
+npm run start:dev
 ```
 
-## Deployment
+## Roadmap
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+- [x] Domain model (`Tenant`/`Endpoint`/`Event`/`Delivery`/`DeliveryAttempt`) + migrations
+- [x] Idempotent event ingestion, race-safe via a DB unique constraint
+- [x] Fan-out to subscribed endpoints through BullMQ
+- [x] Retry with exponential backoff
+- [x] Circuit breaker per endpoint (`closed` / `open` / `half_open`)
+- [ ] Rate limiting per tenant
+- [ ] HMAC signature on delivered payloads
+- [ ] Structured logging
+- [ ] API-key auth (endpoints currently take `tenantId` directly, no guard yet)
+- [ ] Dead-letter replay endpoint for exhausted deliveries
+- [ ] Read endpoints (list/get tenants, endpoints, deliveries)
+- [ ] Unit/e2e tests
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## Author
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Observability
-
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
-
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
-
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Aleksandr Pavlov
+[LinkedIn](https://linkedin.com/in/pavloveone)

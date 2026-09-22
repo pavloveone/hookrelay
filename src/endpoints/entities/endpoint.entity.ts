@@ -33,5 +33,5 @@ export class Endpoint extends Basic {
   @Column({ default: 0 })
   consecutiveFailures: number;
   @Column({ type: 'timestamp', nullable: true })
-  circuitOpenedAt: Date;
+  circuitOpenedAt: Date | null;
 }

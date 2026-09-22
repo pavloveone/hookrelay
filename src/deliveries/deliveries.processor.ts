@@ -8,6 +8,7 @@ import { firstValueFrom } from 'rxjs';
 import { DeliveryAttemptsService } from '../deliveryAttempts/deliveryAttempts.service';
 import { EStatus } from './entities/delivery.entity';
 import { isAxiosError } from 'axios';
+import { EndpointsService } from '../endpoints/endpoints.service';
 
 @Processor(queues.DELIVERIES)
 export class DeliveriesProcessor extends WorkerHost {
@@ -15,6 +16,7 @@ export class DeliveriesProcessor extends WorkerHost {
     private readonly deliveriesService: DeliveriesService,
     private readonly httpService: HttpService,
     private readonly deliveryAttemptsServices: DeliveryAttemptsService,
+    private readonly endpointsService: EndpointsService,
   ) {
     super();
   }
@@ -22,7 +24,12 @@ export class DeliveriesProcessor extends WorkerHost {
     const { deliveryId } = job.data;
     const delivery = await this.deliveriesService.findOne(deliveryId);
     if (delivery?.endpoint?.circuitState === ECircuitState.OPEN) {
-      throw new Error('circuitState is open');
+      const cooldownMs = 60_000;
+      const elapsed =
+        Date.now() - (delivery.endpoint.circuitOpenedAt?.getTime() ?? 0);
+      if (elapsed < cooldownMs) {
+        throw new Error('circuitState is open');
+      }
     }
     const startTime = performance.now();
     try {
@@ -39,10 +46,11 @@ export class DeliveriesProcessor extends WorkerHost {
         responseBody: JSON.stringify(response.data),
         durationMs,
       });
-      return await this.deliveriesService.updateStatus(
-        deliveryId,
-        EStatus.SUCCEEDED,
-      );
+      await this.deliveriesService.updateStatus(deliveryId, EStatus.SUCCEEDED);
+      return await this.endpointsService.recordAttemptResult({
+        endpointId: delivery?.endpoint?.id,
+        success: true,
+      });
     } catch (error) {
       if (isAxiosError(error)) {
         const durationMs = Math.round(performance.now() - startTime);
@@ -54,6 +62,10 @@ export class DeliveriesProcessor extends WorkerHost {
             : undefined,
           error: error.message,
           durationMs,
+        });
+        await this.endpointsService.recordAttemptResult({
+          endpointId: delivery?.endpoint?.id,
+          success: false,
         });
       }
       throw error;
