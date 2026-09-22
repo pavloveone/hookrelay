@@ -12,7 +12,7 @@ NestJS, PostgreSQL (TypeORM), Redis + BullMQ
 
 `Tenant` → `Endpoint`/`Event` → `Delivery` → `DeliveryAttempt`. An event doesn't know who receives it - fan-out creates one delivery per subscribed endpoint, and every HTTP try gets logged separately, success or fail.
 
-Idempotency relies on a DB unique constraint rather than a check-then-insert, avoiding a race under concurrent requests. Retries use BullMQ's own backoff. Each endpoint tracks its own circuit breaker state, so a dead subscriber can't burn through timeouts for everyone else. Delivered payloads are HMAC-SHA256 signed with the endpoint's `secret` and sent as the `x-hookrelay-signature` header, so subscribers can verify a webhook actually came from Hookrelay.
+Idempotency relies on a DB unique constraint rather than a check-then-insert, avoiding a race under concurrent requests. Retries use BullMQ's own backoff. Each endpoint tracks its own circuit breaker state, so a dead subscriber can't burn through timeouts for everyone else. Delivered payloads are HMAC-SHA256 signed with the endpoint's `secret` and sent as the `x-hookrelay-signature` header, so subscribers can verify a webhook actually came from Hookrelay. Rate limiting is per tenant rather than per IP, so one noisy tenant can't eat another's quota.
 
 ## API
 
@@ -60,7 +60,7 @@ npm run start:dev
 - [x] Per-endpoint circuit breaker
 - [x] API-key auth
 - [x] HMAC-signed payloads
-- [ ] Rate limiting per tenant
+- [x] Rate limiting per tenant
 - [ ] Structured logging
 - [ ] Dead-letter replay endpoint
 - [ ] Read endpoints (list/get)

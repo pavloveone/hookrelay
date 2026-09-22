@@ -22,7 +22,7 @@ export class EventsService {
 
   async createEvent(
     { idempotencyKey, eventType, payload }: CreateEventDto,
-    req: any,
+    req: Record<string, any>,
   ) {
     const tenantId = req.tenant.id;
     try {
