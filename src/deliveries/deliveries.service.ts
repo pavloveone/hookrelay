@@ -19,10 +19,13 @@ export class DeliveriesService {
   }
 
   findOne(id: string) {
-    return this.deliveriesRepository.findOne({
-      where: { id },
-      relations: { event: true, endpoint: true },
-    });
+    return this.deliveriesRepository
+      .createQueryBuilder('delivery')
+      .leftJoinAndSelect('delivery.event', 'event')
+      .leftJoinAndSelect('delivery.endpoint', 'endpoint')
+      .addSelect('endpoint.secret')
+      .where('delivery.id = :id', { id })
+      .getOne();
   }
 
   async updateStatus(id: string, newStatus: EStatus) {

@@ -12,7 +12,7 @@ NestJS, PostgreSQL (TypeORM), Redis + BullMQ
 
 The data model is `Tenant` → `Endpoint`/`Event` → `Delivery` → `DeliveryAttempt`. An `Event` is just "something happened" - it doesn't know who receives it. Fan-out creates one `Delivery` per subscribed `Endpoint`, and every HTTP try against it is logged as a separate `DeliveryAttempt`, success or failure.
 
-Idempotency isn't a "check first, then insert" - that has a race window under concurrent requests. Instead, inserts rely on a real unique constraint on `(tenant, idempotencyKey)`; a conflict means the event already exists, and the existing row is returned instead. Retries are handled by BullMQ's own `attempts`/`backoff` options rather than a hand-rolled retry loop. The circuit breaker (`closed` / `open` / `half_open`) lives on the `Endpoint` itself, so a run of failures stops the queue from wasting HTTP timeouts on an endpoint that's clearly down, and a single probe request after a cooldown decides whether to close it again.
+Idempotency isn't a "check first, then insert" - that has a race window under concurrent requests. Instead, inserts rely on a real unique constraint on `(tenant, idempotencyKey)`; a conflict means the event already exists, and the existing row is returned instead. Retries are handled by BullMQ's own `attempts`/`backoff` options rather than a hand-rolled retry loop. The circuit breaker (`closed` / `open` / `half_open`) lives on the `Endpoint` itself, so a run of failures stops the queue from wasting HTTP timeouts on an endpoint that's clearly down, and a single probe request after a cooldown decides whether to close it again. Every delivered payload is signed with HMAC-SHA256 using the endpoint's own `secret`, sent as `x-hookrelay-signature`, so a subscriber can verify a webhook actually came from Hookrelay and wasn't tampered with in transit.
 
 ## API
 
@@ -20,7 +20,7 @@ Idempotency isn't a "check first, then insert" - that has a race window under co
 - `POST /tenants` - register a tenant, returns an `apiKey` (shown once)
 
 **Endpoints** (`/endpoints`)
-- `POST /endpoints` - register a subscriber URL for the authenticated tenant, returns a `secret` (shown once, used for payload signing later). Requires `x-api-key`.
+- `POST /endpoints` - register a subscriber URL for the authenticated tenant, returns a `secret` (shown once, used to sign delivered payloads). Requires `x-api-key`.
 
 **Events** (`/events`)
 - `POST /events` - ingest an event (`eventType`, `payload`, `idempotencyKey`) for the authenticated tenant; a repeated `idempotencyKey` returns the original event instead of creating a duplicate. Requires `x-api-key`.
@@ -59,8 +59,8 @@ npm run start:dev
 - [x] Retry with exponential backoff
 - [x] Circuit breaker per endpoint (`closed` / `open` / `half_open`)
 - [x] API-key auth (tenant resolved from `x-api-key`, never trusted from the request body)
+- [x] HMAC-SHA256 signature on delivered payloads (`x-hookrelay-signature`, signed with the endpoint's `secret`)
 - [ ] Rate limiting per tenant
-- [ ] HMAC signature on delivered payloads
 - [ ] Structured logging
 - [ ] Dead-letter replay endpoint for exhausted deliveries
 - [ ] Read endpoints (list/get tenants, endpoints, deliveries)

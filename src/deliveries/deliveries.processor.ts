@@ -9,6 +9,7 @@ import { DeliveryAttemptsService } from '../deliveryAttempts/deliveryAttempts.se
 import { EStatus } from './entities/delivery.entity';
 import { isAxiosError } from 'axios';
 import { EndpointsService } from '../endpoints/endpoints.service';
+import { createHmac } from 'crypto';
 
 @Processor(queues.DELIVERIES)
 export class DeliveriesProcessor extends WorkerHost {
@@ -23,7 +24,10 @@ export class DeliveriesProcessor extends WorkerHost {
   async process(job: Job<{ deliveryId: string }>) {
     const { deliveryId } = job.data;
     const delivery = await this.deliveriesService.findOne(deliveryId);
-    if (delivery?.endpoint?.circuitState === ECircuitState.OPEN) {
+    if (!delivery) {
+      throw new Error(`A delivery with ID = ${deliveryId} cannot be found`);
+    }
+    if (delivery.endpoint.circuitState === ECircuitState.OPEN) {
       const cooldownMs = 60_000;
       const elapsed =
         Date.now() - (delivery.endpoint.circuitOpenedAt?.getTime() ?? 0);
@@ -33,11 +37,13 @@ export class DeliveriesProcessor extends WorkerHost {
     }
     const startTime = performance.now();
     try {
+      const signature = createHmac('sha256', delivery.endpoint.secret)
+        .update(JSON.stringify(delivery.event.payload))
+        .digest('hex');
       const response = await firstValueFrom(
-        this.httpService.post(
-          delivery?.endpoint?.url ?? '',
-          delivery?.event?.payload,
-        ),
+        this.httpService.post(delivery.endpoint.url, delivery.event.payload, {
+          headers: { ['x-hookrelay-signature']: signature },
+        }),
       );
       const durationMs = Math.round(performance.now() - startTime);
       await this.deliveryAttemptsServices.create({
@@ -48,7 +54,7 @@ export class DeliveriesProcessor extends WorkerHost {
       });
       await this.deliveriesService.updateStatus(deliveryId, EStatus.SUCCEEDED);
       return await this.endpointsService.recordAttemptResult({
-        endpointId: delivery?.endpoint?.id,
+        endpointId: delivery.endpoint.id,
         success: true,
       });
     } catch (error) {
@@ -64,7 +70,7 @@ export class DeliveriesProcessor extends WorkerHost {
           durationMs,
         });
         await this.endpointsService.recordAttemptResult({
-          endpointId: delivery?.endpoint?.id,
+          endpointId: delivery.endpoint.id,
           success: false,
         });
       }
