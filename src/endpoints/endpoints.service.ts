@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ECircuitState, Endpoint } from './entities/endpoint.entity';
 import { Repository } from 'typeorm';
 import { CreateEndpointDto } from './dto/create-endpoint.dto';
+import * as apiKeyGuard from '../common/guards/api-key.guard';
 import { RecordAttemptResultDto } from './dto/record-attempt-result.dto';
 
 @Injectable()
@@ -12,7 +13,24 @@ export class EndpointsService {
     private readonly endpointsRepository: Repository<Endpoint>,
   ) {}
 
-  create(dto: CreateEndpointDto, req: Record<string, any>) {
+  getEndpointsByTenant(req: apiKeyGuard.IRequest) {
+    return this.endpointsRepository.find({
+      where: { tenant: { id: req.tenant.id } },
+    });
+  }
+
+  async getEndpointByTenant(id: string, req: apiKeyGuard.IRequest) {
+    const currentEndpoint = await this.endpointsRepository.findOne({
+      where: { id },
+      relations: { tenant: true, deliveries: true },
+    });
+    if (req.tenant.id !== currentEndpoint?.tenant.id) {
+      throw new NotFoundException();
+    }
+    return { ...currentEndpoint, tenant: null };
+  }
+
+  create(dto: CreateEndpointDto, req: apiKeyGuard.IRequest) {
     const secret = crypto.randomUUID();
     return this.endpointsRepository.save({
       tenant: { id: req.tenant.id },

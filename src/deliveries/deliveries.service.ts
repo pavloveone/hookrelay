@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Delivery, EStatus } from './entities/delivery.entity';
 import { Repository } from 'typeorm';
 import { CreateDeliveryDto } from './dto/create-delivery.dto';
+import * as apiKeyGuard from '../common/guards/api-key.guard';
 
 @Injectable()
 export class DeliveriesService {
@@ -10,6 +11,30 @@ export class DeliveriesService {
     @InjectRepository(Delivery)
     private readonly deliveriesRepository: Repository<Delivery>,
   ) {}
+
+  getDeliveriesByTenant(req: apiKeyGuard.IRequest) {
+    return this.deliveriesRepository
+      .createQueryBuilder('delivery')
+      .leftJoinAndSelect('delivery.endpoint', 'endpoint')
+      .where('endpoint.tenant.id = :tenantId', { tenantId: req.tenant.id })
+      .getMany();
+  }
+
+  async getDeliveryByTenant(id: string, req: apiKeyGuard.IRequest) {
+    const currentDelivery = await this.deliveriesRepository
+      .createQueryBuilder('delivery')
+      .leftJoinAndSelect('delivery.endpoint', 'endpoint')
+      .leftJoinAndSelect('delivery.event', 'event')
+      .leftJoinAndSelect('delivery.deliveryAttempts', 'deliveryAttempts')
+      .where('delivery.id = :id', { id })
+      .andWhere('endpoint.tenant.id = :tenantId', { tenantId: req.tenant.id })
+      .getOne();
+
+    if (!currentDelivery) {
+      throw new NotFoundException();
+    }
+    return currentDelivery;
+  }
 
   create(dto: CreateDeliveryDto) {
     return this.deliveriesRepository.save({

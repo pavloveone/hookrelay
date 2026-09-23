@@ -3,6 +3,7 @@ import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { ApiKeyGuard } from '../common/guards/api-key.guard';
 import { TenantThrottlerGuard } from '../common/guards/tenant-throttler.guard';
+import * as apiKeyGuard from '../common/guards/api-key.guard';
 
 @Controller('events')
 export class EventsController {
@@ -10,7 +11,7 @@ export class EventsController {
 
   @UseGuards(ApiKeyGuard, TenantThrottlerGuard)
   @Post()
-  createEvent(@Body() dto: CreateEventDto, @Req() req: Record<string, any>) {
+  createEvent(@Body() dto: CreateEventDto, @Req() req: apiKeyGuard.IRequest) {
     return this.eventsService.createEvent(dto, req);
   }
 }

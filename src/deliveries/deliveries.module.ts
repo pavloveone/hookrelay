@@ -7,6 +7,7 @@ import { DeliveriesProcessor } from './deliveries.processor';
 import { HttpModule } from '@nestjs/axios';
 import { DeliveryAttemptsModule } from '../deliveryAttempts/deliveryAttempts.module';
 import { EndpointsModule } from '../endpoints/endpoints.module';
+import { TenantsModule } from '../tenants/tenants.module';
 
 @Module({
   providers: [DeliveriesService, DeliveriesProcessor],
@@ -16,6 +17,7 @@ import { EndpointsModule } from '../endpoints/endpoints.module';
     HttpModule,
     DeliveryAttemptsModule,
     EndpointsModule,
+    TenantsModule,
   ],
   exports: [DeliveriesService],
 })
