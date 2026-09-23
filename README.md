@@ -29,6 +29,7 @@ Idempotency relies on a DB unique constraint rather than a check-then-insert, av
 
 **Deliveries** (needs `x-api-key`)
 - `GET /deliveries` / `GET /deliveries/:id` - list or fetch deliveries for your own endpoints, including attempt history
+- `POST /deliveries/:id/replay` - manually retry a delivery that's `exhausted` its automatic retries
 
 Every read is scoped to the authenticated tenant - fetching a resource that belongs to someone else returns a 404, not their data.
 
@@ -69,8 +70,8 @@ npm run start:dev
 - [x] HMAC-signed payloads
 - [x] Rate limiting per tenant
 - [x] Read endpoints (list/get), scoped to the authenticated tenant
+- [x] Dead-letter replay endpoint for exhausted deliveries
 - [ ] Structured logging
-- [ ] Dead-letter replay endpoint
 - [ ] Tests
 
 ## Author

@@ -8,12 +8,14 @@ import { HttpModule } from '@nestjs/axios';
 import { DeliveryAttemptsModule } from '../deliveryAttempts/deliveryAttempts.module';
 import { EndpointsModule } from '../endpoints/endpoints.module';
 import { TenantsModule } from '../tenants/tenants.module';
+import { QueueModule } from '../common/queue/queue.module';
 
 @Module({
   providers: [DeliveriesService, DeliveriesProcessor],
   controllers: [DeliveriesController],
   imports: [
     TypeOrmModule.forFeature([Delivery]),
+    QueueModule,
     HttpModule,
     DeliveryAttemptsModule,
     EndpointsModule,

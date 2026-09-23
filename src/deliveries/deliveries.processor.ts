@@ -74,6 +74,12 @@ export class DeliveriesProcessor extends WorkerHost {
           success: false,
         });
       }
+      if (job.attemptsMade + 1 >= (job.opts.attempts ?? 0)) {
+        await this.deliveriesService.updateStatus(
+          deliveryId,
+          EStatus.EXHAUSTED,
+        );
+      }
       throw error;
     }
   }
