@@ -59,6 +59,12 @@ npm run migration:run
 npm run start:dev
 ```
 
+## Tests
+
+```bash
+npm test
+```
+
 ## Roadmap
 
 - [x] Domain model + migrations
@@ -72,7 +78,7 @@ npm run start:dev
 - [x] Read endpoints (list/get), scoped to the authenticated tenant
 - [x] Dead-letter replay endpoint for exhausted deliveries
 - [x] Structured logging (Pino), with request logs and key pipeline events (fan-out, delivery attempts, circuit breaker transitions)
-- [ ] Tests
+- [x] Unit tests for the services, guards, and worker - idempotency, circuit breaker transitions, ownership checks, retry/exhaustion
 
 ## Author
 
