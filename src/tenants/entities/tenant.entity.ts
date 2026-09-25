@@ -1,4 +1,4 @@
-import { Column, Entity, OneToMany } from 'typeorm';
+import { Column, Entity, OneToMany, type Relation } from 'typeorm';
 import { Endpoint } from '../../endpoints/entities/endpoint.entity';
 import { Event } from '../../events/entities/event.entity';
 import { Basic } from '../../common/database/entities/basic.entity';
@@ -10,7 +10,7 @@ export class Tenant extends Basic {
   @Column()
   apiKey: string;
   @OneToMany(() => Endpoint, (endpoint) => endpoint.tenant)
-  endpoints: Endpoint[];
+  endpoints: Relation<Endpoint>[];
   @OneToMany(() => Event, (event) => event.tenant)
-  events: Event[];
+  events: Relation<Event>[];
 }

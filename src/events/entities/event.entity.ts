@@ -1,4 +1,11 @@
-import { Column, Entity, ManyToOne, OneToMany, Unique } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  type Relation,
+  Unique,
+} from 'typeorm';
 import { Tenant } from '../../tenants/entities/tenant.entity';
 import { Delivery } from '../../deliveries/entities/delivery.entity';
 import { Basic } from '../../common/database/entities/basic.entity';
@@ -7,9 +14,9 @@ import { Basic } from '../../common/database/entities/basic.entity';
 @Unique(['tenant', 'idempotencyKey'])
 export class Event extends Basic {
   @ManyToOne(() => Tenant, (tenant) => tenant.events)
-  tenant: Tenant;
+  tenant: Relation<Tenant>;
   @OneToMany(() => Delivery, (delivery) => delivery.event)
-  deliveries: Delivery[];
+  deliveries: Relation<Delivery>[];
   @Column()
   eventType: string;
   @Column({ type: 'jsonb' })

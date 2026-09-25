@@ -1,4 +1,10 @@
-import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  type Relation,
+} from 'typeorm';
 import { Event } from '../../events/entities/event.entity';
 import { Endpoint } from '../../endpoints/entities/endpoint.entity';
 import { DeliveryAttempt } from '../../deliveryAttempts/entities/deliveryAttempt.entity';
@@ -14,14 +20,14 @@ export enum EStatus {
 @Entity()
 export class Delivery extends Basic {
   @ManyToOne(() => Event, (event) => event.deliveries)
-  event: Event;
+  event: Relation<Event>;
   @ManyToOne(() => Endpoint, (endpoint) => endpoint.deliveries)
-  endpoint: Endpoint;
+  endpoint: Relation<Endpoint>;
   @OneToMany(
     () => DeliveryAttempt,
     (deliveryAttempt) => deliveryAttempt.delivery,
   )
-  deliveryAttempts: DeliveryAttempt[];
+  deliveryAttempts: Relation<DeliveryAttempt>[];
   @Column({ type: 'enum', enum: EStatus, default: EStatus.PENDING })
   status: EStatus;
   @Column({ default: 0 })

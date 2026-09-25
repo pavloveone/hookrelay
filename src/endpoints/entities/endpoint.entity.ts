@@ -1,4 +1,10 @@
-import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  OneToMany,
+  type Relation,
+} from 'typeorm';
 import { Tenant } from '../../tenants/entities/tenant.entity';
 import { Delivery } from '../../deliveries/entities/delivery.entity';
 import { Basic } from '../../common/database/entities/basic.entity';
@@ -17,9 +23,9 @@ export enum ECircuitState {
 @Entity()
 export class Endpoint extends Basic {
   @ManyToOne(() => Tenant, (tenant) => tenant.endpoints)
-  tenant: Tenant;
+  tenant: Relation<Tenant>;
   @OneToMany(() => Delivery, (delivery) => delivery.endpoint)
-  deliveries: Delivery[];
+  deliveries: Relation<Delivery>[];
   @Column()
   url: string;
   @Column({ select: false })
