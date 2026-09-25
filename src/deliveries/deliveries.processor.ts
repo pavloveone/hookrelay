@@ -10,6 +10,7 @@ import { EStatus } from './entities/delivery.entity';
 import { isAxiosError } from 'axios';
 import { EndpointsService } from '../endpoints/endpoints.service';
 import { createHmac } from 'crypto';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
 @Processor(queues.DELIVERIES)
 export class DeliveriesProcessor extends WorkerHost {
@@ -18,6 +19,8 @@ export class DeliveriesProcessor extends WorkerHost {
     private readonly httpService: HttpService,
     private readonly deliveryAttemptsServices: DeliveryAttemptsService,
     private readonly endpointsService: EndpointsService,
+    @InjectPinoLogger(DeliveriesProcessor.name)
+    private readonly logger: PinoLogger,
   ) {
     super();
   }
@@ -32,6 +35,10 @@ export class DeliveriesProcessor extends WorkerHost {
       const elapsed =
         Date.now() - (delivery.endpoint.circuitOpenedAt?.getTime() ?? 0);
       if (elapsed < cooldownMs) {
+        this.logger.warn(
+          { deliveryId, endpointId: delivery.endpoint.id },
+          'skipping delivery, circuit is open',
+        );
         throw new Error('circuitState is open');
       }
     }
@@ -53,6 +60,15 @@ export class DeliveriesProcessor extends WorkerHost {
         durationMs,
       });
       await this.deliveriesService.updateStatus(deliveryId, EStatus.SUCCEEDED);
+      this.logger.info(
+        {
+          deliveryId,
+          endpointId: delivery.endpoint.id,
+          httpStatusCode: response.status,
+          durationMs,
+        },
+        'delivery succeeded',
+      );
       return await this.endpointsService.recordAttemptResult({
         endpointId: delivery.endpoint.id,
         success: true,
@@ -73,11 +89,25 @@ export class DeliveriesProcessor extends WorkerHost {
           endpointId: delivery.endpoint.id,
           success: false,
         });
+        this.logger.warn(
+          {
+            deliveryId,
+            endpointId: delivery.endpoint.id,
+            httpStatusCode: error.response?.status,
+            error: error.message,
+            durationMs,
+          },
+          'delivery attempt failed',
+        );
       }
       if (job.attemptsMade + 1 >= (job.opts.attempts ?? 0)) {
         await this.deliveriesService.updateStatus(
           deliveryId,
           EStatus.EXHAUSTED,
+        );
+        this.logger.warn(
+          { deliveryId, endpointId: delivery.endpoint.id },
+          'delivery exhausted all retries',
         );
       }
       throw error;

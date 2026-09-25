@@ -12,7 +12,7 @@ NestJS, PostgreSQL (TypeORM), Redis + BullMQ
 
 `Tenant` → `Endpoint`/`Event` → `Delivery` → `DeliveryAttempt`. An event doesn't know who receives it - fan-out creates one delivery per subscribed endpoint, and every HTTP try gets logged separately, success or fail.
 
-Idempotency relies on a DB unique constraint rather than a check-then-insert, avoiding a race under concurrent requests. Retries use BullMQ's own backoff. Each endpoint tracks its own circuit breaker state, so a dead subscriber can't burn through timeouts for everyone else. Delivered payloads are HMAC-SHA256 signed with the endpoint's `secret` and sent as the `x-hookrelay-signature` header, so subscribers can verify a webhook actually came from Hookrelay. Rate limiting is per tenant rather than per IP, so one noisy tenant can't eat another's quota.
+Idempotency relies on a DB unique constraint rather than a check-then-insert, avoiding a race under concurrent requests. Retries use BullMQ's own backoff. Each endpoint tracks its own circuit breaker state, so a dead subscriber can't burn through timeouts for everyone else. Delivered payloads are HMAC-SHA256 signed with the endpoint's `secret` and sent as the `x-hookrelay-signature` header, so subscribers can verify a webhook actually came from Hookrelay. Rate limiting is per tenant rather than per IP, so one noisy tenant can't eat another's quota. Logging is structured JSON (Pino) - every HTTP request, and each pipeline event worth knowing about (an event's fan-out, each delivery attempt, circuit breaker transitions) carries the relevant IDs instead of a plain string.
 
 ## API
 
@@ -71,7 +71,7 @@ npm run start:dev
 - [x] Rate limiting per tenant
 - [x] Read endpoints (list/get), scoped to the authenticated tenant
 - [x] Dead-letter replay endpoint for exhausted deliveries
-- [ ] Structured logging
+- [x] Structured logging (Pino), with request logs and key pipeline events (fan-out, delivery attempts, circuit breaker transitions)
 - [ ] Tests
 
 ## Author

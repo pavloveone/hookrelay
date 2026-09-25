@@ -5,12 +5,15 @@ import { Repository } from 'typeorm';
 import { CreateEndpointDto } from './dto/create-endpoint.dto';
 import * as apiKeyGuard from '../common/guards/api-key.guard';
 import { RecordAttemptResultDto } from './dto/record-attempt-result.dto';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
 @Injectable()
 export class EndpointsService {
   constructor(
     @InjectRepository(Endpoint)
     private readonly endpointsRepository: Repository<Endpoint>,
+    @InjectPinoLogger(EndpointsService.name)
+    private readonly logger: PinoLogger,
   ) {}
 
   getEndpointsByTenant(req: apiKeyGuard.IRequest) {
@@ -60,6 +63,21 @@ export class EndpointsService {
         newState.circuitState = ECircuitState.OPEN;
         newState.circuitOpenedAt = new Date();
       }
+    }
+    if (
+      currentEndpoint.circuitState !== newState.circuitState &&
+      newState.circuitState === ECircuitState.OPEN
+    ) {
+      this.logger.warn(
+        { endpointId, consecutiveFailures: nextConsecutiveFailures },
+        'circuit opened',
+      );
+    }
+    if (
+      currentEndpoint.circuitState !== newState.circuitState &&
+      newState.circuitState === ECircuitState.CLOSED
+    ) {
+      this.logger.info({ endpointId }, 'circuit closed');
     }
     return this.endpointsRepository.save({ ...newState });
   }

@@ -10,6 +10,7 @@ import { DeliveryAttemptsModule } from './deliveryAttempts/deliveryAttempts.modu
 import { DatabaseModule } from './common/database/database.module';
 import { QueueModule } from './common/queue/queue.module';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { LoggerModule } from './common/logger/logger.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     DeliveryAttemptsModule,
     DatabaseModule,
     QueueModule,
+    LoggerModule,
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
   ],
   controllers: [AppController],
